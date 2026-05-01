@@ -159,6 +159,7 @@ def agregar_rutina():
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
                 "cliente_id": { "type": "string" },
+                "cliente": { "type": "string" },
                 "dias": { "type": "array" },
                 "activa": { "type": "boolean" },
                 "publica": { "type": "boolean" }
@@ -248,6 +249,7 @@ def modificar_rutina(id):
             "type": "object",
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
+                "cliente": { "type": "string" },
                 "dias": { "type": "array" },
                 "activa": { "type": "boolean" },
                 "publica": { "type": "boolean" }
