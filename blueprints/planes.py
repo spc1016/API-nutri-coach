@@ -108,6 +108,17 @@ def obtener_dietas_publicas():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# Obtener una rutina por su ID
+@planes_bp.route('/rutinas/<id>', methods=['GET'])
+def obtener_rutina(id):
+    try:
+        rutina = db.rutinas.find_one({'_id': ObjectId(id)})
+        if not rutina:
+            return jsonify({'error': 'Rutina no encontrada'}), 404
+        return jsonify(_oid_to_str(rutina)), 200
+    except Exception:
+        return jsonify({'error': 'ID inválido'}), 400
+
 # Obtener todas las rutinas públicas
 @planes_bp.route('/rutinas/publicas', methods=['GET'])
 def obtener_rutinas_publicas():
