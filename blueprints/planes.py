@@ -174,6 +174,16 @@ def agregar_rutina():
         if claims.get('role') == 'cliente' and str(user_id) != data['cliente_id']:
             return jsonify({'error': 'No puedes crear rutinas para otro usuario'}), 403
 
+        role = claims.get('role')
+        usuario = None
+        if role == 'cliente':
+            usuario = db.clientes.find_one({'_id': ObjectId(user_id)})
+        elif role == 'nutricionista':
+            usuario = db.nutricionistas.find_one({'_id': ObjectId(user_id)})
+            
+        if usuario and 'nombre' in usuario:
+            data['cliente'] = usuario['nombre']
+
         data['activa'] = data.get('activa', True)
         data['publica'] = data.get('publica', False)
         data['cliente_id'] = ObjectId(data['cliente_id'])
