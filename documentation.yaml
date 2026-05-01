@@ -1,0 +1,1272 @@
+openapi: 3.0.3
+info:
+  title: NutriCoach API
+  description: API REST para la gestión integral de nutricionistas, clientes, dietas, rutinas y seguimiento.
+  version: "1.0.0"
+  contact:
+    name: Sergio Peralvarez y Jorge Moros
+
+servers:
+  - url: http://nutricoach.us-east-1.elasticbeanstalk.com
+    description: Producción (AWS Elastic Beanstalk)
+  - url: http://localhost:5000
+    description: Desarrollo local
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          example: juan@nutri.com
+        password:
+          type: string
+          example: "1234"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+          enum: [nutricionista, cliente]
+
+    Nutricionista:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        email:
+          type: string
+        telefono:
+          type: string
+
+    NutricionistaCreate:
+      type: object
+      required: [nombre, email, password_hash]
+      properties:
+        nombre:
+          type: string
+          example: María López
+        email:
+          type: string
+          example: maria@nutri.com
+        password_hash:
+          type: string
+          example: "1234"
+        telefono:
+          type: string
+          example: "612345678"
+
+    NutricionistaUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        email:
+          type: string
+        password_hash:
+          type: string
+        telefono:
+          type: string
+
+    Cliente:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        email:
+          type: string
+        telefono:
+          type: string
+        edad:
+          type: integer
+        peso:
+          type: number
+        altura:
+          type: number
+        genero:
+          type: string
+        objetivo:
+          type: string
+        nutricionista_id:
+          type: string
+
+    ClienteCreate:
+      type: object
+      required: [nombre, email, password_hash]
+      properties:
+        nombre:
+          type: string
+          example: Pedro García
+        email:
+          type: string
+          example: pedro@email.com
+        password_hash:
+          type: string
+          example: "1234"
+        telefono:
+          type: string
+        edad:
+          type: integer
+          example: 30
+        peso:
+          type: number
+          example: 80.5
+        altura:
+          type: number
+          example: 175.0
+        genero:
+          type: string
+          example: Masculino
+        objetivo:
+          type: string
+          example: Ganar masa muscular
+        nutricionista_id:
+          type: string
+
+    ClienteUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        email:
+          type: string
+        password_hash:
+          type: string
+        telefono:
+          type: string
+        edad:
+          type: integer
+        peso:
+          type: number
+        altura:
+          type: number
+        objetivo:
+          type: string
+        nutricionista_id:
+          type: string
+
+    Alimento:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        calorias:
+          type: number
+        proteinas:
+          type: number
+        carbohidratos:
+          type: number
+        grasas:
+          type: number
+
+    AlimentoCreate:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          example: Pechuga de pollo
+        calorias:
+          type: number
+          example: 165
+        proteinas:
+          type: number
+          example: 31
+        carbohidratos:
+          type: number
+          example: 0
+        grasas:
+          type: number
+          example: 3.6
+
+    Ejercicio:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        grupo_muscular:
+          type: string
+        duracion_minutos:
+          type: integer
+
+    EjercicioCreate:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          example: Press de banca
+        descripcion:
+          type: string
+          example: Ejercicio compuesto para pecho
+        grupo_muscular:
+          type: string
+          example: Pecho
+        duracion_minutos:
+          type: integer
+          example: 10
+
+    DietaCreate:
+      type: object
+      required: [nombre, cliente_id]
+      properties:
+        nombre:
+          type: string
+          example: Dieta Hipercalórica
+        cliente_id:
+          type: string
+        kcal_objetivo:
+          type: integer
+          example: 2500
+        notas_generales:
+          type: string
+        activa:
+          type: boolean
+          default: true
+
+    DietaUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        comidas:
+          type: array
+        activa:
+          type: boolean
+
+    Dieta:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        cliente_id:
+          type: string
+        kcal_objetivo:
+          type: integer
+        notas_generales:
+          type: string
+        activa:
+          type: boolean
+        comidas:
+          type: array
+          items:
+            type: object
+            properties:
+              nombre:
+                type: string
+              hora:
+                type: string
+              alimentos:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    alimento_id:
+                      type: string
+                    nombre_snapshot:
+                      type: string
+                    cantidad:
+                      type: number
+                    unidad:
+                      type: string
+
+    ComidaCreate:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          example: Desayuno
+        hora:
+          type: string
+          example: "08:00"
+        alimentos:
+          type: array
+
+    AlimentoComidaCreate:
+      type: object
+      required: [alimento_id]
+      properties:
+        alimento_id:
+          type: string
+        nombre_snapshot:
+          type: string
+        cantidad:
+          type: number
+          example: 150
+        unidad:
+          type: string
+          example: g
+
+    RutinaCreate:
+      type: object
+      required: [nombre, cliente_id]
+      properties:
+        nombre:
+          type: string
+          example: Rutina Full Body
+        cliente_id:
+          type: string
+        activa:
+          type: boolean
+          default: true
+        publica:
+          type: boolean
+          default: false
+
+    RutinaUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        dias:
+          type: array
+        activa:
+          type: boolean
+        publica:
+          type: boolean
+
+    Rutina:
+      type: object
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        cliente_id:
+          type: string
+        activa:
+          type: boolean
+        publica:
+          type: boolean
+        dias:
+          type: array
+          items:
+            type: object
+            properties:
+              nombre:
+                type: string
+              ejercicios:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ejercicio_id:
+                      type: string
+                    nombre_snapshot:
+                      type: string
+                    series:
+                      type: integer
+                    repeticiones:
+                      type: integer
+                    descanso_segundos:
+                      type: integer
+
+    DiaCreate:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          example: Lunes - Pecho
+        ejercicios:
+          type: array
+
+    EjercicioDiaCreate:
+      type: object
+      required: [ejercicio_id]
+      properties:
+        ejercicio_id:
+          type: string
+        nombre_snapshot:
+          type: string
+        series:
+          type: integer
+          example: 4
+        repeticiones:
+          type: integer
+          example: 12
+        descanso_segundos:
+          type: integer
+          example: 90
+
+    SeguimientoCreate:
+      type: object
+      required: [cliente_id, fecha]
+      properties:
+        cliente_id:
+          type: string
+        fecha:
+          type: string
+          example: "2026-03-03"
+        peso:
+          type: number
+          example: 75.5
+        notas:
+          type: string
+          example: Buena evolución
+
+    Seguimiento:
+      type: object
+      properties:
+        _id:
+          type: string
+        cliente_id:
+          type: string
+        fecha:
+          type: string
+        peso:
+          type: number
+        notas:
+          type: string
+
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  # ─── AUTH ─────────────────────────────────────────────────────
+  /login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión
+      description: Autentica al usuario y devuelve un token JWT con su rol.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales incorrectas
+
+  # ─── NUTRICIONISTAS ──────────────────────────────────────────
+  /nutricionistas:
+    get:
+      tags: [Nutricionistas]
+      summary: Listar todos los nutricionistas
+      responses:
+        '200':
+          description: Lista de nutricionistas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Nutricionista'
+    post:
+      tags: [Nutricionistas]
+      summary: Crear un nutricionista
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NutricionistaCreate'
+      responses:
+        '201':
+          description: Nutricionista creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Datos inválidos o email duplicado
+
+  /nutricionistas/{id}:
+    put:
+      tags: [Nutricionistas]
+      summary: Modificar un nutricionista
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NutricionistaUpdate'
+      responses:
+        '200':
+          description: Nutricionista modificado
+        '404':
+          description: Nutricionista no encontrado
+    delete:
+      tags: [Nutricionistas]
+      summary: Eliminar un nutricionista
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Nutricionista eliminado
+        '404':
+          description: Nutricionista no encontrado
+
+  /nutricionistas/{id}/clientes:
+    get:
+      tags: [Nutricionistas]
+      summary: Obtener clientes asignados a un nutricionista
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de clientes del nutricionista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+
+  # ─── CLIENTES ────────────────────────────────────────────────
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar todos los clientes
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+    post:
+      tags: [Clientes]
+      summary: Registrar un nuevo cliente
+      description: No requiere autenticación (registro público).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteCreate'
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Datos inválidos o email duplicado
+
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Obtener detalle de un cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente no encontrado
+    put:
+      tags: [Clientes]
+      summary: Modificar datos de un cliente
+      description: Requiere ser el propio cliente o un nutricionista.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteUpdate'
+      responses:
+        '200':
+          description: Cliente modificado
+        '404':
+          description: Cliente no encontrado
+    delete:
+      tags: [Clientes]
+      summary: Eliminar un cliente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Cliente eliminado
+        '404':
+          description: Cliente no encontrado
+
+  # ─── ALIMENTOS ───────────────────────────────────────────────
+  /alimentos:
+    get:
+      tags: [Alimentos]
+      summary: Listar todos los alimentos
+      responses:
+        '200':
+          description: Lista de alimentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alimento'
+    post:
+      tags: [Alimentos]
+      summary: Crear un alimento
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlimentoCreate'
+      responses:
+        '201':
+          description: Alimento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /alimentos/{id}:
+    get:
+      tags: [Alimentos]
+      summary: Obtener detalle de un alimento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del alimento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alimento'
+        '404':
+          description: Alimento no encontrado
+    put:
+      tags: [Alimentos]
+      summary: Modificar un alimento
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlimentoCreate'
+      responses:
+        '200':
+          description: Alimento modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alimento'
+        '404':
+          description: Alimento no encontrado
+    delete:
+      tags: [Alimentos]
+      summary: Eliminar un alimento
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Alimento eliminado
+        '404':
+          description: Alimento no encontrado
+
+  # ─── EJERCICIOS ──────────────────────────────────────────────
+  /ejercicios:
+    get:
+      tags: [Ejercicios]
+      summary: Listar todos los ejercicios
+      responses:
+        '200':
+          description: Lista de ejercicios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ejercicio'
+    post:
+      tags: [Ejercicios]
+      summary: Crear un ejercicio
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EjercicioCreate'
+      responses:
+        '201':
+          description: Ejercicio creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /ejercicios/{id}:
+    get:
+      tags: [Ejercicios]
+      summary: Obtener detalle de un ejercicio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del ejercicio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ejercicio'
+        '404':
+          description: Ejercicio no encontrado
+    put:
+      tags: [Ejercicios]
+      summary: Modificar un ejercicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EjercicioCreate'
+      responses:
+        '200':
+          description: Ejercicio modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ejercicio'
+        '404':
+          description: Ejercicio no encontrado
+    delete:
+      tags: [Ejercicios]
+      summary: Eliminar un ejercicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Ejercicio eliminado
+        '404':
+          description: Ejercicio no encontrado
+
+  # ─── DIETAS ──────────────────────────────────────────────────
+  /clientes/{id}/dietas:
+    get:
+      tags: [Dietas]
+      summary: Obtener todas las dietas de un cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de dietas del cliente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dieta'
+
+  /clientes/{id}/dietas-activas:
+    get:
+      tags: [Dietas]
+      summary: Obtener solo las dietas activas de un cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de dietas activas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dieta'
+
+  /dietas:
+    post:
+      tags: [Dietas]
+      summary: Crear una dieta
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietaCreate'
+      responses:
+        '201':
+          description: Dieta creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /dietas/{id}:
+    put:
+      tags: [Dietas]
+      summary: Modificar una dieta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietaUpdate'
+      responses:
+        '200':
+          description: Dieta modificada
+        '404':
+          description: Dieta no encontrada
+    delete:
+      tags: [Dietas]
+      summary: Desactivar una dieta (borrado lógico)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Dieta desactivada
+        '404':
+          description: Dieta no encontrada
+
+  /dietas/{id}/comidas:
+    post:
+      tags: [Dietas]
+      summary: Agregar una comida a una dieta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComidaCreate'
+      responses:
+        '201':
+          description: Comida agregada
+        '404':
+          description: Dieta no encontrada
+
+  /dietas/{id}/comidas/{comida_index}/alimentos:
+    post:
+      tags: [Dietas]
+      summary: Agregar un alimento a una comida
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: comida_index
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Índice de la comida (0, 1, 2...)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlimentoComidaCreate'
+      responses:
+        '201':
+          description: Alimento agregado a la comida
+        '404':
+          description: Dieta o comida no encontrada
+
+  /dietas/{id}/comidas/{comida_index}/alimentos/{alimento_index}:
+    delete:
+      tags: [Dietas]
+      summary: Eliminar un alimento de una comida
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: comida_index
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: alimento_index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Alimento eliminado de la comida
+        '404':
+          description: No encontrado
+
+  # ─── RUTINAS ─────────────────────────────────────────────────
+  /clientes/{id}/rutinas:
+    get:
+      tags: [Rutinas]
+      summary: Obtener todas las rutinas de un cliente
+      description: Devuelve todas las rutinas si el usuario es el dueño o nutricionista; de lo contrario, solo las públicas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de rutinas del cliente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rutina'
+
+  /clientes/{id}/rutinas-activas:
+    get:
+      tags: [Rutinas]
+      summary: Obtener solo las rutinas activas de un cliente
+      description: Devuelve las rutinas activas si el usuario es el dueño o nutricionista; de lo contrario, solo las públicas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de rutinas activas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rutina'
+
+  /rutinas:
+    post:
+      tags: [Rutinas]
+      summary: Crear una rutina
+      description: Cualquier usuario autenticado puede crear rutinas. Si es cliente, el `cliente_id` debe ser el suyo propio.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RutinaCreate'
+      responses:
+        '201':
+          description: Rutina creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /rutinas/{id}:
+    put:
+      tags: [Rutinas]
+      summary: Modificar una rutina
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RutinaUpdate'
+      responses:
+        '200':
+          description: Rutina modificada
+        '404':
+          description: Rutina no encontrada
+    delete:
+      tags: [Rutinas]
+      summary: Desactivar una rutina (borrado lógico)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Rutina desactivada
+        '404':
+          description: Rutina no encontrada
+
+  /rutinas/{id}/dias:
+    post:
+      tags: [Rutinas]
+      summary: Agregar un día a una rutina
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiaCreate'
+      responses:
+        '201':
+          description: Día agregado
+        '404':
+          description: Rutina no encontrada
+
+  /rutinas/{id}/dias/{dia_index}/ejercicios:
+    post:
+      tags: [Rutinas]
+      summary: Agregar un ejercicio a un día
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dia_index
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Índice del día (0, 1, 2...)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EjercicioDiaCreate'
+      responses:
+        '201':
+          description: Ejercicio agregado al día
+        '404':
+          description: Rutina o día no encontrado
+
+  /rutinas/{id}/dias/{dia_index}/ejercicios/{ejercicio_index}:
+    delete:
+      tags: [Rutinas]
+      summary: Eliminar un ejercicio de un día
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dia_index
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: ejercicio_index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Ejercicio eliminado del día
+        '404':
+          description: No encontrado
+
+  # ─── SEGUIMIENTO ─────────────────────────────────────────────
+  /seguimientos:
+    post:
+      tags: [Seguimiento]
+      summary: Crear un registro de seguimiento
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeguimientoCreate'
+      responses:
+        '201':
+          description: Seguimiento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /seguimientos/{id}:
+    get:
+      tags: [Seguimiento]
+      summary: Obtener un registro de seguimiento por ID
+      description: Requiere estar autenticado (cualquier rol).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del seguimiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seguimiento'
+        '404':
+          description: Seguimiento no encontrado
