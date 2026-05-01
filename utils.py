@@ -2,10 +2,10 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt, get_jwt_identity, verify_jwt_in_request
 from pymongo import MongoClient
-import config
+import os       
 
 # Configuración de base de datos compartida
-client = MongoClient(config.MONGODB_CONNECTION_STRING)
+client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"))
 db = client.NutricionDB
 
 # Decorador para verificar autenticación y rol (compartido entre Blueprints)

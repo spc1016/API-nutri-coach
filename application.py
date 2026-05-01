@@ -3,7 +3,7 @@ from datetime import timedelta
 from flask import Flask, send_file
 from flask_jwt_extended import JWTManager
 from flask_swagger_ui import get_swaggerui_blueprint
-import config
+
 
 # Importar Blueprints
 from blueprints.auth import auth_bp
@@ -13,7 +13,7 @@ from blueprints.planes import planes_bp
 from blueprints.seguimiento import seguimiento_bp
 
 application = Flask(__name__)
-application.config["JWT_SECRET_KEY"] = config.SECRET_KEY
+application.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
 application.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 jwt = JWTManager(application)
 
