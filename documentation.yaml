@@ -104,6 +104,10 @@ components:
           type: string
         nutricionista_id:
           type: string
+        seguidores_count:
+          type: integer
+        seguidos_count:
+          type: integer
 
     ClienteCreate:
       type: object
@@ -667,6 +671,82 @@ paths:
           description: Cliente eliminado
         '404':
           description: Cliente no encontrado
+
+  /clientes/{id}/seguir:
+    post:
+      tags: [Clientes]
+      summary: Seguir a un cliente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuario seguido exitosamente
+        '400':
+          description: Error (ej. ya lo sigues)
+        '404':
+          description: Usuario no encontrado
+    delete:
+      tags: [Clientes]
+      summary: Dejar de seguir a un cliente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dejaste de seguir al usuario
+        '404':
+          description: No sigues a este usuario
+          
+  /clientes/{id}/seguidores:
+    get:
+      tags: [Clientes]
+      summary: Obtener seguidores de un cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de clientes seguidores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+
+  /clientes/{id}/seguidos:
+    get:
+      tags: [Clientes]
+      summary: Obtener a quienes sigue un cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de clientes seguidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
 
   # ─── ALIMENTOS ───────────────────────────────────────────────
   /alimentos:

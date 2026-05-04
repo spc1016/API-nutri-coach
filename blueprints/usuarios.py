@@ -2,7 +2,8 @@ from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from jsonschema import validate
 from werkzeug.security import generate_password_hash
-from utils import db, check_auth, check_auth_owner_or_nutricionista
+from utils import db, check_auth, check_auth_owner_or_nutricionista, check_auth_any
+from flask_jwt_extended import get_jwt_identity
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -194,6 +195,12 @@ def obtener_cliente(id):
         if 'nutricionista_id' in cliente and cliente['nutricionista_id']:
             cliente['nutricionista_id'] = str(cliente['nutricionista_id'])
             
+        # Contar seguidores y seguidos
+        seguidores_count = db.seguimientos.count_documents({'seguido_id': ObjectId(id)})
+        seguidos_count = db.seguimientos.count_documents({'seguidor_id': ObjectId(id)})
+        cliente['seguidores_count'] = seguidores_count
+        cliente['seguidos_count'] = seguidos_count
+            
         return jsonify(cliente), 200
     except Exception as e:
         print(f"Error cargando cliente: {e}")
@@ -238,3 +245,88 @@ def obtener_clientes_por_nutricionista(id):
     except Exception as e:
         print(f"Error en obtener_clientes_por_nutricionista: {e}")
         return jsonify({'error': 'Error al obtener clientes del nutricionista'}), 400
+
+# Seguir a un usuario
+@usuarios_bp.route('/clientes/<id>/seguir', methods=['POST'])
+@check_auth_any()
+def seguir_usuario(id):
+    try:
+        seguidor_id = get_jwt_identity()
+        if seguidor_id == id:
+            return jsonify({'error': 'No puedes seguirte a ti mismo'}), 400
+            
+        # Verificar que ambos existan
+        seguido = db.clientes.find_one({'_id': ObjectId(id)})
+        if not seguido:
+            return jsonify({'error': 'Usuario a seguir no encontrado'}), 404
+            
+        # Verificar si ya lo sigue
+        existente = db.seguimientos.find_one({
+            'seguidor_id': ObjectId(seguidor_id),
+            'seguido_id': ObjectId(id)
+        })
+        if existente:
+            return jsonify({'error': 'Ya sigues a este usuario'}), 400
+            
+        db.seguimientos.insert_one({
+            'seguidor_id': ObjectId(seguidor_id),
+            'seguido_id': ObjectId(id)
+        })
+        return jsonify({'mensaje': 'Usuario seguido exitosamente'}), 200
+    except Exception as e:
+        print(f"Error al seguir usuario: {e}")
+        return jsonify({'error': 'Error interno'}), 500
+
+# Dejar de seguir a un usuario
+@usuarios_bp.route('/clientes/<id>/seguir', methods=['DELETE'])
+@check_auth_any()
+def dejar_de_seguir_usuario(id):
+    try:
+        seguidor_id = get_jwt_identity()
+        result = db.seguimientos.delete_one({
+            'seguidor_id': ObjectId(seguidor_id),
+            'seguido_id': ObjectId(id)
+        })
+        if result.deleted_count == 0:
+            return jsonify({'error': 'No sigues a este usuario'}), 404
+            
+        return jsonify({'mensaje': 'Dejaste de seguir al usuario'}), 200
+    except Exception as e:
+        print(f"Error al dejar de seguir: {e}")
+        return jsonify({'error': 'Error interno'}), 500
+
+# Obtener seguidores
+@usuarios_bp.route('/clientes/<id>/seguidores', methods=['GET'])
+def obtener_seguidores(id):
+    try:
+        seguimientos = list(db.seguimientos.find({'seguido_id': ObjectId(id)}))
+        seguidores_ids = [s['seguidor_id'] for s in seguimientos]
+        
+        seguidores = list(db.clientes.find({'_id': {'$in': seguidores_ids}}, {'password_hash': 0}))
+        for s in seguidores:
+            s['_id'] = str(s['_id'])
+            if 'nutricionista_id' in s and s['nutricionista_id']:
+                s['nutricionista_id'] = str(s['nutricionista_id'])
+                
+        return jsonify(seguidores), 200
+    except Exception as e:
+        print(f"Error al obtener seguidores: {e}")
+        return jsonify({'error': 'Error interno'}), 500
+
+# Obtener seguidos
+@usuarios_bp.route('/clientes/<id>/seguidos', methods=['GET'])
+def obtener_seguidos(id):
+    try:
+        seguimientos = list(db.seguimientos.find({'seguidor_id': ObjectId(id)}))
+        seguidos_ids = [s['seguido_id'] for s in seguimientos]
+        
+        seguidos = list(db.clientes.find({'_id': {'$in': seguidos_ids}}, {'password_hash': 0}))
+        for s in seguidos:
+            s['_id'] = str(s['_id'])
+            if 'nutricionista_id' in s and s['nutricionista_id']:
+                s['nutricionista_id'] = str(s['nutricionista_id'])
+                
+        return jsonify(seguidos), 200
+    except Exception as e:
+        print(f"Error al obtener seguidos: {e}")
+        return jsonify({'error': 'Error interno'}), 500
