@@ -226,6 +226,10 @@ def obtener_clientes():
             c['_id'] = str(c['_id'])
             if 'nutricionista_id' in c:
                 c['nutricionista_id'] = str(c['nutricionista_id'])
+            # Contar seguidores y seguidos
+            oid = ObjectId(c['_id'])
+            c['seguidores_count'] = db.seguimientos.count_documents({'seguido_id': oid})
+            c['seguidos_count'] = db.seguimientos.count_documents({'seguidor_id': oid})
         return jsonify(clientes), 200
     except Exception as e:
         print(f"Error en obtener_clientes: {e}")
