@@ -459,6 +459,26 @@ components:
         error:
           type: string
 
+    PostCreate:
+      type: object
+      required: [texto]
+      properties:
+        texto:
+          type: string
+          example: "Hoy tuve un gran entrenamiento de piernas!"
+        rutina_id:
+          type: string
+          nullable: true
+          example: "64fa3..."
+
+    ComentarioCreate:
+      type: object
+      required: [texto]
+      properties:
+        texto:
+          type: string
+          example: "¡Sigue así, excelente!"
+
 paths:
   # ─── AUTH ─────────────────────────────────────────────────────
   /login:
@@ -1350,3 +1370,135 @@ paths:
                 $ref: '#/components/schemas/Seguimiento'
         '404':
           description: Seguimiento no encontrado
+
+  # ─── COMUNIDAD / POSTS ─────────────────────────────────────────
+  /posts:
+    get:
+      tags: [Comunidad]
+      summary: Obtener todos los posts
+      responses:
+        '200':
+          description: Lista de posts
+    post:
+      tags: [Comunidad]
+      summary: Crear un post
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreate'
+      responses:
+        '201':
+          description: Post creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Error al crear el post
+
+  /posts/{id}:
+    get:
+      tags: [Comunidad]
+      summary: Obtener un post por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del post
+        '404':
+          description: Post no encontrado
+    delete:
+      tags: [Comunidad]
+      summary: Eliminar un post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Post eliminado
+        '403':
+          description: No autorizado
+        '404':
+          description: Post no encontrado
+
+  /posts/{id}/like:
+    post:
+      tags: [Comunidad]
+      summary: Dar o quitar like a un post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado del like actualizado
+        '404':
+          description: Post no encontrado
+
+  /posts/{id}/comentarios:
+    post:
+      tags: [Comunidad]
+      summary: Comentar un post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComentarioCreate'
+      responses:
+        '201':
+          description: Comentario agregado
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Post no encontrado
+
+  /posts/{id}/comentarios/{comentario_index}:
+    delete:
+      tags: [Comunidad]
+      summary: Eliminar un comentario de un post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: comentario_index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Comentario eliminado
+        '403':
+          description: No autorizado
+        '404':
+          description: Post o comentario no encontrado

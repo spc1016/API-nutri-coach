@@ -11,6 +11,7 @@ from blueprints.usuarios import usuarios_bp
 from blueprints.catalogos import catalogos_bp
 from blueprints.planes import planes_bp
 from blueprints.seguimiento import seguimiento_bp
+from blueprints.comunidad import comunidad_bp
 
 application = Flask(__name__)
 application.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
@@ -23,6 +24,7 @@ application.register_blueprint(usuarios_bp)
 application.register_blueprint(catalogos_bp)
 application.register_blueprint(planes_bp)
 application.register_blueprint(seguimiento_bp)
+application.register_blueprint(comunidad_bp)
 
 # Swagger UI
 SWAGGER_URL = '/docs'
