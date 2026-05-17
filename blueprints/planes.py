@@ -130,7 +130,7 @@ def obtener_rutinas_publicas():
 
 # Agregar dieta (requiere autenticación)
 @planes_bp.route('/dietas', methods=['POST'])
-@check_auth('nutricionista')
+@check_auth_any()
 def agregar_dieta():
     try:
         data:dict = request.get_json()
@@ -142,6 +142,7 @@ def agregar_dieta():
                 "kcal_objetivo": { "type": "integer" },
                 "notas_generales": { "type": "string" },
                 "cliente_id": { "type": "string" },
+                "cliente": { "type": "string" },
                 "comidas": { "type": "array" },
                 "activa": { "type": "boolean" },
                 "publica": { "type": "boolean" }
@@ -150,6 +151,22 @@ def agregar_dieta():
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != data['cliente_id']:
+            return jsonify({'error': 'No puedes crear dietas para otro usuario'}), 403
+
+        role = claims.get('role')
+        usuario = None
+        if role == 'cliente':
+            usuario = db.clientes.find_one({'_id': ObjectId(user_id)})
+        elif role == 'nutricionista':
+            usuario = db.nutricionistas.find_one({'_id': ObjectId(user_id)})
+            
+        if usuario and 'nombre' in usuario:
+            data['cliente'] = usuario['nombre']
+
         data['activa'] = data.get('activa', True)
         data['publica'] = data.get('publica', False)
         data['cliente_id'] = ObjectId(data['cliente_id'])
@@ -205,12 +222,19 @@ def agregar_rutina():
 
 # Eliminar dieta (requiere autenticación) - marca como inactiva
 @planes_bp.route('/dietas/<id>', methods=['DELETE'])
-@check_auth('nutricionista')
+@check_auth_any()
 def eliminar_dieta(id):
     try:
-        result = db.dietas.update_one({'_id': ObjectId(id)}, {'$set': {'activa': False}})
-        if result.matched_count == 0:
+        dieta = db.dietas.find_one({'_id': ObjectId(id)})
+        if not dieta:
             return jsonify({'error': 'Dieta no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+
+        result = db.dietas.update_one({'_id': ObjectId(id)}, {'$set': {'activa': False}})
         return '', 204
     except Exception:
         return jsonify({'error': 'ID inválido'}), 400
@@ -236,7 +260,7 @@ def eliminar_rutina(id):
 
 # Modificar dieta (requiere autenticación)
 @planes_bp.route('/dietas/<id>', methods=['PUT'])
-@check_auth('nutricionista')
+@check_auth_any()
 def modificar_dieta(id):
     try:
         data:dict = request.get_json()
@@ -245,6 +269,7 @@ def modificar_dieta(id):
             "type": "object",
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
+                "cliente": { "type": "string" },
                 "comidas": { "type": "array" },
                 "activa": { "type": "boolean" },
                 "publica": { "type": "boolean" }
@@ -252,9 +277,17 @@ def modificar_dieta(id):
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
-        result = db.dietas.update_one({'_id': ObjectId(id)}, {'$set': data})
-        if result.matched_count == 0:
+        
+        dieta = db.dietas.find_one({'_id': ObjectId(id)})
+        if not dieta:
             return jsonify({'error': 'Dieta no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+
+        result = db.dietas.update_one({'_id': ObjectId(id)}, {'$set': data})
         return jsonify({'mensaje': 'Dieta actualizada'}), 200
     except Exception:
         return jsonify({'error': 'Datos inválidos'}), 400
@@ -295,7 +328,7 @@ def modificar_rutina(id):
 
 # Agregar comida a dieta (requiere autenticación)
 @planes_bp.route('/dietas/<id>/comidas', methods=['POST'])
-@check_auth('nutricionista')
+@check_auth_any()
 def agregar_comida_a_dieta(id):
     try:
         data:dict = request.get_json()
@@ -304,27 +337,35 @@ def agregar_comida_a_dieta(id):
             "type": "object",
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
-                "hora": { "type": "string" },
+                "hora_sugerida": { "type": "string" },
                 "alimentos": { "type": "array" }
             },
             "required": ["nombre"],
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
+        
+        dieta = db.dietas.find_one({'_id': ObjectId(id)})
+        if not dieta:
+            return jsonify({'error': 'Dieta no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+
         data['alimentos'] = data.get('alimentos', [])
         result = db.dietas.update_one(
             {'_id': ObjectId(id)},
             {'$push': {'comidas': data}}
         )
-        if result.matched_count == 0:
-            return jsonify({'error': 'Dieta no encontrada'}), 404
         return jsonify({'mensaje': 'Comida agregada'}), 201
     except Exception:
         return jsonify({'error': 'Datos inválidos'}), 400
 
 # Agregar alimento a comida dentro de una dieta (requiere autenticación)
 @planes_bp.route('/dietas/<id>/comidas/<int:comida_index>/alimentos', methods=['POST'])
-@check_auth('nutricionista')
+@check_auth_any()
 def agregar_alimento_a_comida(id, comida_index):
     try:
         data:dict = request.get_json()
@@ -341,13 +382,21 @@ def agregar_alimento_a_comida(id, comida_index):
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
+        
+        dieta = db.dietas.find_one({'_id': ObjectId(id)})
+        if not dieta:
+            return jsonify({'error': 'Dieta no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+
         data['alimento_id'] = ObjectId(data['alimento_id'])
         result = db.dietas.update_one(
             {'_id': ObjectId(id)},
             {'$push': {f'comidas.{comida_index}.alimentos': data}}
         )
-        if result.matched_count == 0:
-            return jsonify({'error': 'Dieta o comida no encontrada'}), 404
         return jsonify({'mensaje': 'Alimento agregado a la comida'}), 201
     except Exception:
         return jsonify({'error': 'Datos inválidos'}), 400
@@ -429,12 +478,17 @@ def agregar_ejercicio_a_dia(id, dia_index):
 
 # Eliminar alimento de comida dentro de una dieta (requiere autenticación)
 @planes_bp.route('/dietas/<id>/comidas/<int:comida_index>/alimentos/<int:alimento_index>', methods=['DELETE'])
-@check_auth('nutricionista')
+@check_auth_any()
 def eliminar_alimento_de_comida(id, comida_index, alimento_index):
     try:
         dieta = db.dietas.find_one({'_id': ObjectId(id)})
         if not dieta:
             return jsonify({'error': 'Dieta no encontrada'}), 404
+            
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
         
         comidas = dieta.get('comidas', [])
         if comida_index < 0 or comida_index >= len(comidas):
@@ -482,6 +536,64 @@ def eliminar_ejercicio_de_dia(id, dia_index, ejercicio_index):
         db.rutinas.update_one(
             {'_id': ObjectId(id)},
             {'$set': {f'dias.{dia_index}.ejercicios': ejercicios}}
+        )
+            
+        return '', 204
+    except Exception:
+        return jsonify({'error': 'ID inválido'}), 400
+
+# Eliminar comida entera de una dieta
+@planes_bp.route('/dietas/<id>/comidas/<int:comida_index>', methods=['DELETE'])
+@check_auth_any()
+def eliminar_comida_de_dieta(id, comida_index):
+    try:
+        dieta = db.dietas.find_one({'_id': ObjectId(id)})
+        if not dieta:
+            return jsonify({'error': 'Dieta no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(dieta.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+        
+        comidas = dieta.get('comidas', [])
+        if comida_index < 0 or comida_index >= len(comidas):
+            return jsonify({'error': 'Índice de comida fuera de rango'}), 404
+            
+        comidas.pop(comida_index)
+        
+        db.dietas.update_one(
+            {'_id': ObjectId(id)},
+            {'$set': {'comidas': comidas}}
+        )
+            
+        return '', 204
+    except Exception:
+        return jsonify({'error': 'ID inválido'}), 400
+
+# Eliminar día entero de una rutina
+@planes_bp.route('/rutinas/<id>/dias/<int:dia_index>', methods=['DELETE'])
+@check_auth_any()
+def eliminar_dia_de_rutina(id, dia_index):
+    try:
+        rutina = db.rutinas.find_one({'_id': ObjectId(id)})
+        if not rutina:
+            return jsonify({'error': 'Rutina no encontrada'}), 404
+
+        claims = get_jwt()
+        user_id = get_jwt_identity()
+        if claims.get('role') == 'cliente' and str(user_id) != str(rutina.get('cliente_id')):
+            return jsonify({'error': 'Acceso no autorizado'}), 403
+        
+        dias = rutina.get('dias', [])
+        if dia_index < 0 or dia_index >= len(dias):
+            return jsonify({'error': 'Índice de día fuera de rango'}), 404
+            
+        dias.pop(dia_index)
+        
+        db.rutinas.update_one(
+            {'_id': ObjectId(id)},
+            {'$set': {'dias': dias}}
         )
             
         return '', 204

@@ -50,7 +50,8 @@ def crear_post():
             "type": "object",
             "properties": {
                 "texto": { "type": "string", "minLength": 1 },
-                "rutina_id": { "type": ["string", "null"] }
+                "rutina_id": { "type": ["string", "null"] },
+                "dieta_id": { "type": ["string", "null"] }
             },
             "required": ["texto"],
             "additionalProperties": False
@@ -77,6 +78,7 @@ def crear_post():
             "autor_nombre": autor_nombre,
             "texto": data["texto"],
             "rutina_id": ObjectId(data["rutina_id"]) if data.get("rutina_id") else None,
+            "dieta_id": ObjectId(data["dieta_id"]) if data.get("dieta_id") else None,
             "likes": 0,
             "liked_by": [],
             "comentarios": [],
