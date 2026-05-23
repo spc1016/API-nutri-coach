@@ -89,7 +89,14 @@ def register_send_code():
         store_pending_verification(email, code, data['nombre'].strip(), password_hash)
         
         # Enviar correo con el código en segundo plano
-        threading.Thread(target=send_verification_email, args=(email, code)).start()
+        def run_async_send():
+            try:
+                send_verification_email(email, code)
+                print(f"✅ [SMTP] Código enviado con éxito a {email}")
+            except Exception as e:
+                print(f"❌ [SMTP_ERROR] Fallo al enviar código a {email}: {e}")
+
+        threading.Thread(target=run_async_send).start()
         
         return jsonify({'message': 'Código de verificación enviado a ' + email}), 200
     except Exception as e:
@@ -174,7 +181,14 @@ def register_resend_code():
         store_pending_verification(email, code, pending['nombre'], pending['password_hash'])
         
         # Enviar nuevo correo en segundo plano
-        threading.Thread(target=send_verification_email, args=(email, code)).start()
+        def run_async_resend():
+            try:
+                send_verification_email(email, code)
+                print(f"✅ [SMTP] Código reenviado con éxito a {email}")
+            except Exception as e:
+                print(f"❌ [SMTP_ERROR] Fallo al reenviar código a {email}: {e}")
+
+        threading.Thread(target=run_async_resend).start()
         
         return jsonify({'message': 'Nuevo código de verificación enviado a ' + email}), 200
     except Exception as e:
