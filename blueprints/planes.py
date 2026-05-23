@@ -467,14 +467,27 @@ def agregar_ejercicio_a_dia(id, dia_index):
         if claims.get('role') == 'cliente' and str(user_id) != str(rutina.get('cliente_id')):
             return jsonify({'error': 'Acceso no autorizado'}), 403
 
+        # Comprobar si ya existe el ejercicio en ese día (sin espacios ni mayúsculas)
+        def normalize(s):
+            return "".join(s.lower().split())
+
+        nuevo_nombre = normalize(data.get('nombre_snapshot', ''))
+        dias = rutina.get('dias', [])
+        if 0 <= dia_index < len(dias):
+            ejercicios_existentes = dias[dia_index].get('ejercicios', [])
+            for ejer in ejercicios_existentes:
+                if normalize(ejer.get('nombre_snapshot', '')) == nuevo_nombre:
+                    return jsonify({'error': f"El ejercicio '{data.get('nombre_snapshot')}' ya está registrado en este día"}), 400
+
         data['ejercicio_id'] = ObjectId(data['ejercicio_id'])
         result = db.rutinas.update_one(
             {'_id': ObjectId(id)},
             {'$push': {f'dias.{dia_index}.ejercicios': data}}
         )
         return jsonify({'mensaje': 'Ejercicio agregado al día'}), 201
-    except Exception:
-        return jsonify({'error': 'Datos inválidos'}), 400
+    except Exception as e:
+        print(f"Error al agregar ejercicio: {e}")
+        return jsonify({'error': 'Datos inválidos o ejercicio ya registrado'}), 400
 
 # Eliminar alimento de comida dentro de una dieta (requiere autenticación)
 @planes_bp.route('/dietas/<id>/comidas/<int:comida_index>/alimentos/<int:alimento_index>', methods=['DELETE'])
