@@ -57,7 +57,7 @@ def store_pending_verification(email, code, nombre, password_hash):
         'code': code,
         'nombre': nombre,
         'password_hash': password_hash,
-        'created_at': datetime.now(timezone.utc)
+        'created_at': datetime.now(timezone.utc).replace(tzinfo=None)
     })
 
 def verify_code(email, code):
@@ -65,8 +65,15 @@ def verify_code(email, code):
     pending = db.verificaciones_pendientes.find_one({'email': email})
     if not pending:
         return False
-    # Check expiration (10 minutes)
-    elapsed = (datetime.now(timezone.utc) - pending['created_at']).total_seconds()
+    
+    # Check expiration (10 minutes) - robust comparison avoiding naive/aware issues
+    created_at = pending['created_at']
+    if created_at.tzinfo is not None:
+        created_at = created_at.replace(tzinfo=None)
+        
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    elapsed = (now - created_at).total_seconds()
+    
     if elapsed > 600:
         db.verificaciones_pendientes.delete_one({'email': email})
         return False
