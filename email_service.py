@@ -1,8 +1,6 @@
 import os
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 from datetime import datetime, timezone
 from utils import db
 
@@ -11,17 +9,12 @@ def generate_verification_code():
     return str(random.randint(100000, 999999))
 
 def send_verification_email(email, code):
-    """Send verification email via Gmail SMTP"""
-    gmail_address = os.getenv('GMAIL_ADDRESS')
-    gmail_app_password = os.getenv('GMAIL_APP_PASSWORD')
+    """Send verification email via Google Apps Script Web App API"""
+    gas_web_app_url = os.getenv('GMAIL_WEB_APP_URL')
+    gas_secret_token = os.getenv('GMAIL_SECRET_TOKEN', 'nutricoach-secret-token')
     
-    if not gmail_address or not gmail_app_password:
-        raise Exception('Email configuration missing. Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD env vars.')
-    
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'NutriCoach - Código de verificación'
-    msg['From'] = gmail_address
-    msg['To'] = email
+    if not gas_web_app_url:
+        raise Exception('Email configuration missing. Set GMAIL_WEB_APP_URL env var.')
     
     html = f"""
     <html>
@@ -38,12 +31,23 @@ def send_verification_email(email, code):
     </html>
     """
     
-    msg.attach(MIMEText(html, 'html'))
+    payload = {
+        "to": email,
+        "subject": "NutriCoach - Código de verificación",
+        "htmlBody": html,
+        "token": gas_secret_token
+    }
     
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        server.login(gmail_address, gmail_app_password)
-        server.send_message(msg)
+    try:
+        response = requests.post(gas_web_app_url, json=payload, timeout=15)
+        response.raise_for_status()
+        response_data = response.json()
+        
+        if "error" in response_data:
+            raise Exception(response_data["error"])
+            
+    except Exception as e:
+        raise Exception(f"Fallo al conectar con Google Apps Script: {e}")
 
 def store_pending_verification(email, code, nombre, password_hash):
     """Store pending verification in MongoDB. Replaces existing entry for same email."""
