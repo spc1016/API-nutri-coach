@@ -1,4 +1,5 @@
 import re
+import threading
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 from jsonschema import validate
@@ -87,8 +88,8 @@ def register_send_code():
         # Guardar datos pendientes de verificación
         store_pending_verification(email, code, data['nombre'].strip(), password_hash)
         
-        # Enviar correo con el código
-        send_verification_email(email, code)
+        # Enviar correo con el código en segundo plano
+        threading.Thread(target=send_verification_email, args=(email, code)).start()
         
         return jsonify({'message': 'Código de verificación enviado a ' + email}), 200
     except Exception as e:
@@ -172,8 +173,8 @@ def register_resend_code():
         # Actualizar el código pendiente (mantener nombre y password_hash)
         store_pending_verification(email, code, pending['nombre'], pending['password_hash'])
         
-        # Enviar nuevo correo
-        send_verification_email(email, code)
+        # Enviar nuevo correo en segundo plano
+        threading.Thread(target=send_verification_email, args=(email, code)).start()
         
         return jsonify({'message': 'Nuevo código de verificación enviado a ' + email}), 200
     except Exception as e:
