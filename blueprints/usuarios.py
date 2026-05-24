@@ -19,10 +19,10 @@ def crear_nutricionista():
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
                 "email": { "type": "string", "minLength": 3 },
-                "password_hash": { "type": "string" },
+                "password": { "type": "string" },
                 "telefono": { "type": "string" }
             },
-            "required": ["nombre", "email", "password_hash"],
+            "required": ["nombre", "email", "password"],
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
@@ -32,7 +32,7 @@ def crear_nutricionista():
             return jsonify({'error': 'El email ya está registrado'}), 400
 
         # Hash de la contraseña antes de guardar
-        data['password_hash'] = generate_password_hash(data['password_hash'])
+        data['password_hash'] = generate_password_hash(data.pop('password'))
         result = db.nutricionistas.insert_one(data)
         return jsonify({'id': str(result.inserted_id)}), 201
     except Exception as e:
@@ -50,7 +50,7 @@ def crear_cliente():
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
                 "email": { "type": "string", "minLength": 3 },
-                "password_hash": { "type": "string" },
+                "password": { "type": "string" },
                 "telefono": { "type": "string" },
                 "edad": { "type": "integer" },
                 "peso": { "type": "number" },
@@ -59,7 +59,7 @@ def crear_cliente():
                 "genero": {"type": "string"},
                 "objetivo": {"type": "string"}
             },
-            "required": ["nombre", "email", "password_hash"],
+            "required": ["nombre", "email", "password"],
             "additionalProperties": False
         }
         validate(instance=data, schema=schema)
@@ -69,7 +69,7 @@ def crear_cliente():
             return jsonify({'error': 'El email ya está registrado'}), 400
 
         # Hash de la contraseña antes de guardar
-        data['password_hash'] = generate_password_hash(data['password_hash'])
+        data['password_hash'] = generate_password_hash(data.pop('password'))
         if 'nutricionista_id' in data:
             data["nutricionista_id"] = ObjectId(data["nutricionista_id"])
         result = db.clientes.insert_one(data)
@@ -114,7 +114,7 @@ def modificar_nutricionista(id):
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
                 "email": { "type": "string", "minLength": 3 },
-                "password_hash": { "type": "string" },
+                "password": { "type": "string" },
                 "telefono": { "type": "string" }, 
             },
             "additionalProperties": False
@@ -127,10 +127,9 @@ def modificar_nutricionista(id):
                db.clientes.find_one({'email': data['email']}):
                 return jsonify({'error': 'El email ya está registrado'}), 400
         
-        # Si se envía password_hash, hay que hashearlo (solo si es texto plano)
-        if 'password_hash' in data:
-            if not data['password_hash'].startswith('scrypt:'):
-                data['password_hash'] = generate_password_hash(data['password_hash'])
+        # Si se envía password, hay que hashearlo
+        if 'password' in data:
+            data['password_hash'] = generate_password_hash(data.pop('password'))
         
         result = db.nutricionistas.update_one({'_id': ObjectId(id)}, {'$set': data})
         if result.matched_count == 0:
@@ -152,7 +151,7 @@ def modificar_cliente(id):
             "properties": {
                 "nombre": { "type": "string", "minLength": 1 },
                 "email": { "type": "string", "minLength": 3 },
-                "password_hash": { "type": "string" },
+                "password": { "type": "string" },
                 "telefono": { "type": "string" },
                 "edad": { "type": "integer" },
                 "peso": { "type": "number" },
@@ -170,10 +169,9 @@ def modificar_cliente(id):
                db.nutricionistas.find_one({'email': data['email']}):
                 return jsonify({'error': 'El email ya está registrado'}), 400
         
-        # Si se envía password_hash, hay que hashearlo (solo si es texto plano)
-        if 'password_hash' in data:
-            if not data['password_hash'].startswith('scrypt:'):
-                data['password_hash'] = generate_password_hash(data['password_hash'])
+        # Si se envía password, hay que hashearlo
+        if 'password' in data:
+            data['password_hash'] = generate_password_hash(data.pop('password'))
         if 'nutricionista_id' in data:
             data['nutricionista_id'] = ObjectId(data['nutricionista_id'])
             
