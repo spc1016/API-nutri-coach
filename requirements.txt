@@ -21,3 +21,5 @@ requests==2.32.5
 rpds-py==0.30.0
 urllib3==2.6.3
 Werkzeug==3.1.5
+rq==2.1.0
+redis==5.0.1

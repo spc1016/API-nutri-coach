@@ -35,7 +35,8 @@ graph TD
         API -->|Controlador / Blueprints| Social[💬 Muro Comunidad]
     end
 
-    Auth -->|Hilos Asíncronos| Mail[✉️ Google Apps Script Mailer]
+    Auth -->|Cola RQ / Redis| Worker[🚀 RQ Worker]
+    Worker -->|Mail Service| Mail[✉️ Google Apps Script Mailer]
     API -->|PyMongo| DB[(🍃 MongoDB Atlas)]
     API -->|Swagger UI| Docs[📝 Docs Interactiva /docs]
 ```
@@ -47,6 +48,7 @@ graph TD
 *   **Autenticación & Autorización:** **Flask-JWT-Extended 4.7.1** con tokens firmados y claims de rol personalizados.
 *   **Validación de Datos:** **jsonschema 4.26.0** para la validación estricta en tiempo de ejecución de las cargas útiles (payloads) HTTP.
 *   **Envío de Correos (OTP):** Google Apps Script Web App API para entrega inmediata y gratuita de correos corporativos en formato HTML interactivo.
+*   **Gestión de Tareas Asíncronas:** **RQ (Redis Queue) 2.1.0** y **Redis 5.0.1** para encolamiento seguro de correos.
 *   **Documentación Interactiva:** **flask-swagger-ui 5.21.0** para renderizar la especificación **OpenAPI 3.0.3** en formato interactivo.
 
 ---
@@ -291,7 +293,13 @@ Los usuarios pueden subir publicaciones al muro comunitario, vincular planes de 
 
 ## 6. 🛠️ Catálogo Completo de Endpoints (API Specs)
 
-La API cuenta con la documentación interactiva en el endpoint `/docs` (Swagger UI). A continuación se resumen todos los endpoints de la API ordenados por módulos y sus permisos:
+La API cuenta con la documentación interactiva en el endpoint `/docs` (Swagger UI). A continuación se resumen todos los endpoints de la API ordenados por módulos y sus permisos.
+
+### 📑 Paginación Global de Colecciones
+Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS accidentales bajo altas cargas de datos, todos los endpoints que listan colecciones (usuarios, alimentos, ejercicios, dietas, rutinas e historial de entrenamiento) implementan **paginación por offset**.
+*   **Parámetros aceptados:**
+    *   `skip` (opcional, por defecto `0`): Número de elementos a omitir.
+    *   `limit` (opcional, por defecto `50`): Límite máximo de elementos devueltos por petición.
 
 ### 🔑 Autenticación y Registro (`auth_bp`)
 
@@ -428,7 +436,13 @@ Sigue estos sencillos pasos para levantar el entorno de desarrollo en tu ordenad
     python application.py
     ```
     *El servidor se levantará de forma automática en http://localhost:5000*
-5.  **Verificación de Funcionamiento:**
+5.  **Ejecutar el Servidor de Tareas Asíncronas (Redis + RQ Worker):**
+    *   Asegúrate de tener un servidor de **Redis** ejecutándose (ej. `redis-server`).
+    *   Inicia el worker de RQ para procesar la cola de correos electrónicos en una terminal paralela:
+        ```bash
+        python worker.py
+        ```
+6.  **Verificación de Funcionamiento:**
     *   Abre tu navegador e ingresa a `http://localhost:5000/docs`. Deberías visualizar de forma automática el dashboard interactivo de **Swagger UI** con toda la especificación cargada correctamente.
 
 ### B. Ejecución del Cliente CLI

@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from jsonschema import validate
 from werkzeug.security import generate_password_hash
-from utils import db, check_auth, check_auth_owner_or_nutricionista, check_auth_any
+from utils import db, check_auth, check_auth_owner_or_nutricionista, check_auth_any, get_pagination
 from flask_jwt_extended import get_jwt_identity
 
 usuarios_bp = Blueprint('usuarios', __name__)
@@ -208,7 +208,8 @@ def obtener_cliente(id):
 @usuarios_bp.route('/nutricionistas', methods=['GET'])
 def obtener_nutricionistas():
     try:
-        nutricionistas = list(db.nutricionistas.find({}, {'password_hash': 0}))
+        skip, limit = get_pagination(request)
+        nutricionistas = list(db.nutricionistas.find({}, {'password_hash': 0}).skip(skip).limit(limit))
         for n in nutricionistas:
             n['_id'] = str(n['_id'])
         return jsonify(nutricionistas), 200
@@ -219,7 +220,8 @@ def obtener_nutricionistas():
 @usuarios_bp.route('/clientes', methods=['GET'])
 def obtener_clientes():
     try:
-        clientes = list(db.clientes.find({}, {'password_hash': 0}))
+        skip, limit = get_pagination(request)
+        clientes = list(db.clientes.find({}, {'password_hash': 0}).skip(skip).limit(limit))
         for c in clientes:
             c['_id'] = str(c['_id'])
             if 'nutricionista_id' in c:
@@ -238,7 +240,8 @@ def obtener_clientes():
 @check_auth('nutricionista')
 def obtener_clientes_por_nutricionista(id):
     try:
-        clientes = list(db.clientes.find({'nutricionista_id': ObjectId(id)}, {'password_hash': 0}))
+        skip, limit = get_pagination(request)
+        clientes = list(db.clientes.find({'nutricionista_id': ObjectId(id)}, {'password_hash': 0}).skip(skip).limit(limit))
         for c in clientes:
             c['_id'] = str(c['_id'])
             if 'nutricionista_id' in c:
@@ -301,7 +304,8 @@ def dejar_de_seguir_usuario(id):
 @usuarios_bp.route('/clientes/<id>/seguidores', methods=['GET'])
 def obtener_seguidores(id):
     try:
-        seguimientos = list(db.seguimientos.find({'seguido_id': ObjectId(id)}))
+        skip, limit = get_pagination(request)
+        seguimientos = list(db.seguimientos.find({'seguido_id': ObjectId(id)}).skip(skip).limit(limit))
         seguidores_ids = [s['seguidor_id'] for s in seguimientos]
         
         seguidores = list(db.clientes.find({'_id': {'$in': seguidores_ids}}, {'password_hash': 0}))
@@ -319,7 +323,8 @@ def obtener_seguidores(id):
 @usuarios_bp.route('/clientes/<id>/seguidos', methods=['GET'])
 def obtener_seguidos(id):
     try:
-        seguimientos = list(db.seguimientos.find({'seguidor_id': ObjectId(id)}))
+        skip, limit = get_pagination(request)
+        seguimientos = list(db.seguimientos.find({'seguidor_id': ObjectId(id)}).skip(skip).limit(limit))
         seguidos_ids = [s['seguido_id'] for s in seguimientos]
         
         seguidos = list(db.clientes.find({'_id': {'$in': seguidos_ids}}, {'password_hash': 0}))

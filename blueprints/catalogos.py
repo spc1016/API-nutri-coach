@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from jsonschema import validate
-from utils import db, check_auth
+from utils import db, check_auth, get_pagination
 
 catalogos_bp = Blueprint('catalogos', __name__)
 
@@ -9,7 +9,8 @@ catalogos_bp = Blueprint('catalogos', __name__)
 @catalogos_bp.route('/alimentos', methods=['GET'])
 def obtener_alimentos():
     try:
-        alimentos = list(db.alimentos.find())
+        skip, limit = get_pagination(request)
+        alimentos = list(db.alimentos.find().skip(skip).limit(limit))
         for a in alimentos:
             a['_id'] = str(a['_id'])
         return jsonify(alimentos), 200
@@ -32,7 +33,8 @@ def obtener_alimento(id):
 @catalogos_bp.route('/ejercicios', methods=['GET'])
 def obtener_ejercicios():
     try:
-        ejercicios = list(db.ejercicios.find())
+        skip, limit = get_pagination(request)
+        ejercicios = list(db.ejercicios.find().skip(skip).limit(limit))
         for e in ejercicios:
             e['_id'] = str(e['_id'])
         return jsonify(ejercicios), 200

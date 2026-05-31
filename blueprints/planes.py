@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from jsonschema import validate
-from utils import db, check_auth, check_auth_owner_or_nutricionista, check_auth_any
+from utils import db, check_auth, check_auth_owner_or_nutricionista, check_auth_any, get_pagination
 from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 
 planes_bp = Blueprint('planes', __name__)
@@ -20,11 +20,12 @@ def _oid_to_str(obj):
 @planes_bp.route('/clientes/<id>/dietas', methods=['GET'])
 def obtener_dietas_cliente(id):
     try:
+        skip, limit = get_pagination(request)
         try:
             oid = ObjectId(id)
-            dietas = list(db.dietas.find({'$or': [{'cliente_id': oid}, {'cliente_id': id}]}))
+            dietas = list(db.dietas.find({'$or': [{'cliente_id': oid}, {'cliente_id': id}]}).skip(skip).limit(limit))
         except Exception:
-            dietas = list(db.dietas.find({'cliente_id': id}))
+            dietas = list(db.dietas.find({'cliente_id': id}).skip(skip).limit(limit))
         return jsonify(_oid_to_str(dietas)), 200
     except Exception as e:
         print(f"Error en obtener_dietas_cliente: {e}")
@@ -52,7 +53,8 @@ def obtener_rutinas_cliente(id):
         if not is_owner_or_nutri:
             query = {'$and': [query, {'publica': True}]}
             
-        rutinas = list(db.rutinas.find(query))
+        skip, limit = get_pagination(request)
+        rutinas = list(db.rutinas.find(query).skip(skip).limit(limit))
         return jsonify(_oid_to_str(rutinas)), 200
     except Exception as e:
         print(f"Error en obtener_rutinas_cliente: {e}")
@@ -61,11 +63,12 @@ def obtener_rutinas_cliente(id):
 @planes_bp.route('/clientes/<id>/dietas-activas', methods=['GET'])
 def obtener_dietas_activas_cliente(id):
     try:
+        skip, limit = get_pagination(request)
         try:
             oid = ObjectId(id)
-            dietas = list(db.dietas.find({'$or': [{'cliente_id': oid}, {'cliente_id': id}], 'activa': {'$ne': False}}))
+            dietas = list(db.dietas.find({'$or': [{'cliente_id': oid}, {'cliente_id': id}], 'activa': {'$ne': False}}).skip(skip).limit(limit))
         except Exception:
-            dietas = list(db.dietas.find({'cliente_id': id, 'activa': {'$ne': False}}))
+            dietas = list(db.dietas.find({'cliente_id': id, 'activa': {'$ne': False}}).skip(skip).limit(limit))
         return jsonify(_oid_to_str(dietas)), 200
     except Exception as e:
         print(f"Error en obtener_dietas_cliente: {e}")
@@ -93,7 +96,8 @@ def obtener_rutinas_activas_cliente(id):
         if not is_owner_or_nutri:
             query = {'$and': [query, {'publica': True}]}
 
-        rutinas = list(db.rutinas.find(query))
+        skip, limit = get_pagination(request)
+        rutinas = list(db.rutinas.find(query).skip(skip).limit(limit))
         return jsonify(_oid_to_str(rutinas)), 200
     except Exception as e:
         print(f"Error en obtener_rutinas_activas_cliente: {e}")
@@ -103,7 +107,8 @@ def obtener_rutinas_activas_cliente(id):
 @planes_bp.route('/dietas/publicas', methods=['GET'])
 def obtener_dietas_publicas():
     try:
-        dietas = list(db.dietas.find({'publica': True, 'activa': {'$ne': False}}))
+        skip, limit = get_pagination(request)
+        dietas = list(db.dietas.find({'publica': True, 'activa': {'$ne': False}}).skip(skip).limit(limit))
         return jsonify(_oid_to_str(dietas)), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -134,7 +139,8 @@ def obtener_rutina(id):
 @planes_bp.route('/rutinas/publicas', methods=['GET'])
 def obtener_rutinas_publicas():
     try:
-        rutinas = list(db.rutinas.find({'publica': True, 'activa': {'$ne': False}}))
+        skip, limit = get_pagination(request)
+        rutinas = list(db.rutinas.find({'publica': True, 'activa': {'$ne': False}}).skip(skip).limit(limit))
         return jsonify(_oid_to_str(rutinas)), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400

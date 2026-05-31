@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from jsonschema import validate
 from flask_jwt_extended import get_jwt, get_jwt_identity
-from utils import db, check_auth, check_auth_any
+from utils import db, check_auth, check_auth_any, get_pagination
 
 seguimiento_bp = Blueprint('seguimiento', __name__)
 
@@ -158,7 +158,8 @@ def obtener_historial_entrenamientos(cliente_id):
         except Exception:
             query = {'cliente_id': cliente_id}
             
-        historial = list(db.historial_entrenamientos.find(query).sort('fecha', -1))
+        skip, limit = get_pagination(request)
+        historial = list(db.historial_entrenamientos.find(query).sort('fecha', -1).skip(skip).limit(limit))
         return jsonify(_oid_to_str(historial)), 200
     except Exception as e:
         print(f"Error al obtener historial: {e}")

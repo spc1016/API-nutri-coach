@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 from jsonschema import validate
 from werkzeug.security import check_password_hash, generate_password_hash
-from utils import db
+from utils import db, task_queue
 from email_service import (
     generate_verification_code, send_verification_email,
     store_pending_verification, verify_code, get_pending_data, delete_pending
@@ -89,14 +89,16 @@ def register_send_code():
         store_pending_verification(email, code, data['nombre'].strip(), password_hash)
         
         # Enviar correo con el código en segundo plano
-        def run_async_send():
+        if task_queue:
             try:
-                send_verification_email(email, code)
-                print(f"✅ [SMTP] Código enviado con éxito a {email}")
+                task_queue.enqueue(send_verification_email, email, code)
+                print(f"✅ [RQ] Encolada tarea de envío de email para {email}")
             except Exception as e:
-                print(f"❌ [SMTP_ERROR] Fallo al enviar código a {email}: {e}")
-
-        threading.Thread(target=run_async_send).start()
+                print(f"❌ [RQ_ERROR] Error al encolar en RQ: {e}. Usando hilo de fallback...")
+                threading.Thread(target=lambda: send_verification_email(email, code)).start()
+        else:
+            print("⚠️ [WARNING] RQ no disponible. Enviando email usando hilo de fallback...")
+            threading.Thread(target=lambda: send_verification_email(email, code)).start()
         
         return jsonify({'message': 'Código de verificación enviado a ' + email}), 200
     except Exception as e:
@@ -181,14 +183,16 @@ def register_resend_code():
         store_pending_verification(email, code, pending['nombre'], pending['password_hash'])
         
         # Enviar nuevo correo en segundo plano
-        def run_async_resend():
+        if task_queue:
             try:
-                send_verification_email(email, code)
-                print(f"✅ [SMTP] Código reenviado con éxito a {email}")
+                task_queue.enqueue(send_verification_email, email, code)
+                print(f"✅ [RQ] Encolada tarea de reenvío de email para {email}")
             except Exception as e:
-                print(f"❌ [SMTP_ERROR] Fallo al reenviar código a {email}: {e}")
-
-        threading.Thread(target=run_async_resend).start()
+                print(f"❌ [RQ_ERROR] Error al encolar en RQ: {e}. Usando hilo de fallback...")
+                threading.Thread(target=lambda: send_verification_email(email, code)).start()
+        else:
+            print("⚠️ [WARNING] RQ no disponible. Enviando email usando hilo de fallback...")
+            threading.Thread(target=lambda: send_verification_email(email, code)).start()
         
         return jsonify({'message': 'Nuevo código de verificación enviado a ' + email}), 200
     except Exception as e:
