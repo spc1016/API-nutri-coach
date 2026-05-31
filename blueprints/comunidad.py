@@ -17,12 +17,21 @@ def _oid_to_str(obj):
         return str(obj)
     return obj
 
-# Obtener todos los posts (públicos y activos)
+# Obtener todos los posts (públicos y activos) con paginación
 @comunidad_bp.route('/posts', methods=['GET'])
 def obtener_posts():
     try:
+        limit = request.args.get('limit', default=10, type=int)
+        limit = min(max(1, limit), 50)  # Limitar entre 1 y 50 para evitar abusos
+        
+        cursor = request.args.get('cursor')
+        
+        filtro = {'activa': {'$ne': False}}
+        if cursor:
+            filtro['fecha_creacion'] = {'$lt': cursor}
+
         # Ordenados por fecha descendente (más recientes primero)
-        posts = list(db.posts.find({'activa': {'$ne': False}}).sort('fecha_creacion', -1))
+        posts = list(db.posts.find(filtro).sort('fecha_creacion', -1).limit(limit))
         return jsonify(_oid_to_str(posts)), 200
     except Exception as e:
         print(f"Error en obtener_posts: {e}")

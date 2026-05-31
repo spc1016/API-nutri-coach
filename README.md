@@ -379,8 +379,8 @@ La API cuenta con la documentación interactiva en el endpoint `/docs` (Swagger 
 
 | Método | Endpoint | Permiso | Descripción |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/posts` | Público | Lista todos los posts activos y públicos en la comunidad (orden descendente). |
-| `GET` | `/posts/<id>` | Público | Obtiene un post en específico y sus comentarios. |
+| `GET` | `/posts` | Público | Lista posts activos y públicos en la comunidad con **paginación basada en cursor** (orden descendente por `fecha_creacion`). Acepta parámetros de consulta opcionales `limit` (por defecto 10, máx 50) y `cursor` (timestamp ISO `fecha_creacion` del último post cargado). |
+| `GET` | `/posts/<id>` | Público | Obtiene un post en específico y sus comentarios. Utilizado para sincronizaciones de interacciones directas sin refrescar todo el muro. |
 | `POST` | `/posts` | Autenticado | Crea una publicación con texto. Opcionalmente adjunta una imagen (Cloudinary URL) o planes públicos. |
 | `DELETE` | `/posts/<id>` | Propietario | Realiza un borrado lógico del post del muro (`activa: false`). Solo permitido al autor del post. |
 | `POST` | `/posts/<id>/like` | Autenticado | Sistema Toggle de Me Gusta (añade un like si no lo tenía, o lo quita si ya existía). |
