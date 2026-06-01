@@ -1,6 +1,6 @@
 # 🥗 NutriCoach API - Memoria del Proyecto y Guía de Uso
 
-¡Bienvenido a **NutriCoach**! Una plataforma de software integral diseñada para conectar a **nutricionistas** y **clientes**, permitiendo una planificación nutricional avanzada, el diseño de rutinas de entrenamiento físico a medida, el seguimiento minucioso del progreso corporal y una red comunitaria interactiva.
+¡Bienvenido a **NutriCoach**! Una plataforma de software integral diseñada para **clientes** y entusiastas del fitness, permitiendo una planificación nutricional avanzada, el diseño de rutinas de entrenamiento físico a medida, el seguimiento minucioso del progreso corporal y una red comunitaria interactiva.
 
 Este repositorio contiene la arquitectura completa del proyecto, dividida en un robusto **Backend en Flask** con base de datos NoSQL en **MongoDB Atlas** y un **Cliente de terminal CLI** para interactuar de forma directa con todas las funcionalidades de la API.
 
@@ -34,7 +34,7 @@ graph TD
         API -->|Controlador / Blueprints| Follow[📊 Seguimiento & Historial]
         API -->|Controlador / Blueprints| Social[💬 Muro Comunidad]
     end
-
+ 
     Auth -->|Cola RQ / Redis| Worker[🚀 RQ Worker]
     Worker -->|Mail Service| Mail[✉️ Google Apps Script Mailer]
     API -->|PyMongo| DB[(🍃 MongoDB Atlas)]
@@ -55,15 +55,14 @@ graph TD
 
 ## 2. 🔒 Sistema de Seguridad y Roles
 
-NutriCoach cuenta con una capa robusta de seguridad basada en **JSON Web Tokens (JWT)** y control de acceso basado en roles (**RBAC**). Al autenticarse con éxito, el servidor inyecta el rol del usuario (`cliente` o `nutricionista`) en los *claims* adicionales del token.
+NutriCoach cuenta con una capa robusta de seguridad basada en **JSON Web Tokens (JWT)** y control de acceso basado en roles (**RBAC**). Al autenticarse con éxito, el servidor inyecta la información del usuario en los *claims* adicionales del token.
 
 ### 🛡️ Decoradores de Control de Acceso (En `utils.py`)
 
 Para garantizar que los recursos permanezcan protegidos, se han implementado decoradores personalizados que interceptan las peticiones:
 
-1.  `@check_auth('nutricionista')`: Restringe el acceso estrictamente a usuarios con rol de **nutricionista** (ej. creación de alimentos en el catálogo maestro, eliminación de clientes).
-2.  `@check_auth_any()`: Permite el acceso a cualquier usuario con un JWT válido, ya sea cliente o nutricionista (ej. interactuar en la comunidad, ver catálogos maestros).
-3.  `@check_auth_owner_or_nutricionista()`: Una regla dinámica avanzada. Permite el paso si el solicitante es un **nutricionista**, o bien si el solicitante es un **cliente** y su ID coincide exactamente con el ID del recurso que intenta modificar (ej. actualizar su propio peso, cambiar sus metas).
+1.  `@check_auth_any()`: Permite el acceso a cualquier usuario con un JWT válido (ej. interactuar en la comunidad, ver catálogos maestros).
+2.  `@check_auth_owner()`: Una regla dinámica avanzada. Permite el paso si el solicitante es el propietario legítimo del recurso que intenta modificar (ej. actualizar su propio peso, cambiar sus metas).
 
 ---
 
@@ -84,7 +83,7 @@ API_NutriCoach/
     │   ├── comunidad.py         # Posts, likes y comentarios
     │   ├── planes.py            # Gestión avanzada de dietas y rutinas (y sus subrecursos)
     │   ├── seguimiento.py       # Registro de peso corporal e historial de entrenamientos por series
-    │   └── usuarios.py          # CRUD de clientes/nutricionistas y red de seguidores (follow)
+    │   └── usuarios.py          # CRUD de clientes y red de seguidores (follow)
     ├── application.py           # Punto de entrada de la aplicación Flask (configuraciones e inicializaciones)
     ├── config.py                # Variables de entorno y credenciales (MongoDB, JWT_Secret, etc.)
     ├── email_service.py         # Motor de envío OTP y validación temporal de pre-registro
@@ -113,19 +112,7 @@ Almacena la información de los usuarios que consumen las dietas y rutinas.
   "altura": 180.0,
   "genero": "Masculino",
   "objetivo": "Pérdida de grasa",
-  "nutricionista_id": "ObjectId('65fa3a4fb52b821a8c9b3e01')"
-}
-```
-
-### 🔵 `nutricionistas`
-Profesionales que guían a los clientes y administran catálogos.
-```json
-{
-  "_id": "ObjectId('65fa3a4fb52b821a8c9b3e01')",
-  "nombre": "Dra. María López",
-  "email": "maria@nutricoach.com",
-  "password_hash": "pbkdf2:sha256:600000$...",
-  "telefono": "699887766"
+  "foto_perfil": "http://res.cloudinary.com/dsgu3bw8h/image/upload/v123456/perfil.jpg"
 }
 ```
 
@@ -265,7 +252,7 @@ sequenceDiagram
 
     Cliente->>API: POST /register/send-code {nombre, email, password}
     Note over API: Valida que el email termine en @gmail.com
-    API->>DB: Consultar duplicado en 'clientes' y 'nutricionistas'
+    API->>DB: Consultar duplicado en 'clientes'
     alt Email no duplicado
         API->>DB: Guarda registro temporal en 'verificaciones_pendientes' (Código OTP + Contraseña Hasheada)
         API->>GAS: HTTP POST Envío Correo OTP (Ejecución en segundo plano / Hilo)
@@ -305,7 +292,7 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 
 | Método | Endpoint | Permiso | Descripción |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/login` | Público | Autentica al usuario (cliente/nutricionista). Retorna un JWT de acceso (válido 24 horas) y el rol. |
+| `POST` | `/login` | Público | Autentica al usuario. Retorna un JWT de acceso (válido 24 horas) y el rol. |
 | `POST` | `/register/send-code` | Público | Valida datos básicos de registro y envía un código de 6 dígitos a un correo `@gmail.com` válido. |
 | `POST` | `/register/verify-code` | Público | Valida el código temporal enviado. Si es correcto, da de alta al cliente de manera formal. |
 | `POST` | `/register/resend-code` | Público | Genera y reenvía un nuevo código OTP a una solicitud pendiente de registro. |
@@ -314,16 +301,11 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 
 | Método | Endpoint | Permiso | Descripción |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/nutricionistas` | Público | Devuelve la lista completa de todos los nutricionistas disponibles. |
-| `POST` | `/nutricionistas` | Nutricionista | Crea un nuevo nutricionista en el sistema (ideal para alta de colegas). |
-| `PUT` | `/nutricionistas/<id>` | Nutricionista | Modifica los datos de perfil de un nutricionista. |
-| `DELETE` | `/nutricionistas/<id>` | Nutricionista | Elimina el perfil de un nutricionista del sistema. |
-| `GET` | `/nutricionistas/<id>/clientes` | Nutricionista | Devuelve todos los clientes que tienen asignado a este nutricionista. |
 | `GET` | `/clientes` | Público | Devuelve la lista de clientes (excluye contraseña), incluyendo número de seguidores/seguidos. |
 | `POST` | `/clientes` | Público | Creación directa de cliente sin verificación por email (bypass administrativo). |
-| `GET` | `/clientes/<id>` | Público | Obtiene el perfil detallado de un cliente y su respectivo nutricionista. |
-| `PUT` | `/clientes/<id>` | Propietario / Nutri | Modifica los datos de perfil de un cliente (edad, peso, altura, objetivo). |
-| `DELETE` | `/clientes/<id>` | Nutricionista | Elimina a un cliente de la base de datos de manera irreversible. |
+| `GET` | `/clientes/<id>` | Público | Obtiene el perfil detallado de un cliente. |
+| `PUT` | `/clientes/<id>` | Propietario | Modifica los datos de perfil de un cliente (edad, peso, altura, objetivo). |
+| `DELETE` | `/clientes/<id>` | Propietario | Elimina a un cliente de la base de datos de manera irreversible. |
 | `POST` | `/clientes/<id>/seguir` | Autenticado | Comienza a seguir a un cliente (sistema de red social interna). |
 | `DELETE` | `/clientes/<id>/seguir` | Autenticado | Deja de seguir a un cliente. |
 | `GET` | `/clientes/<id>/seguidores` | Público | Lista los seguidores del cliente. |
@@ -335,14 +317,14 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 | :--- | :--- | :--- | :--- |
 | `GET` | `/alimentos` | Público | Obtiene la lista completa del catálogo de alimentos y sus macronutrientes. |
 | `GET` | `/alimentos/<id>` | Público | Obtiene el detalle de un alimento individual. |
-| `POST` | `/alimentos` | Nutricionista | Registra un nuevo alimento con calorías, carbohidratos, grasas y proteínas. |
-| `PUT` | `/alimentos/<id>` | Nutricionista | Modifica los macronutrientes o datos de un alimento. |
-| `DELETE` | `/alimentos/<id>` | Nutricionista | Elimina un alimento del catálogo maestro. |
+| `POST` | `/alimentos` | Autenticado | Registra un nuevo alimento con calorías, carbohidratos, grasas y proteínas. |
+| `PUT` | `/alimentos/<id>` | Autenticado | Modifica los macronutrientes o datos de un alimento. |
+| `DELETE` | `/alimentos/<id>` | Autenticado | Elimina un alimento del catálogo maestro. |
 | `GET` | `/ejercicios` | Público | Lista todos los ejercicios cargados en el catálogo de entrenamiento. |
 | `GET` | `/ejercicios/<id>` | Público | Obtiene la descripción e instrucciones de un ejercicio por ID. |
-| `POST` | `/ejercicios` | Nutricionista | Crea un ejercicio especificando grupo muscular y duración recomendada. |
-| `PUT` | `/ejercicios/<id>` | Nutricionista | Modifica los datos de un ejercicio. |
-| `DELETE` | `/ejercicios/<id>` | Nutricionista | Elimina un ejercicio del catálogo de entrenamiento. |
+| `POST` | `/ejercicios` | Autenticado | Crea un ejercicio especificando grupo muscular y duración recomendada. |
+| `PUT` | `/ejercicios/<id>` | Autenticado | Modifica los datos de un ejercicio. |
+| `DELETE` | `/ejercicios/<id>` | Autenticado | Elimina un ejercicio del catálogo de entrenamiento. |
 
 ### 📋 Gestión de Dietas y Rutinas (`planes_bp`)
 
@@ -403,7 +385,7 @@ El proyecto incluye un completo **Cliente de Consola CLI** (`client/main.py`) pr
 
 ### 🌟 Características del Cliente
 *   **Gestión de Sesión Fluida:** Permite hacer login y almacenar de forma transparente el token JWT Bearer para inyectarlo de manera automática en las peticiones posteriores.
-*   **Gestión de Roles Dinámica:** El menú principal adapta y muestra el estado actual de tu sesión (`nutricionista`, `cliente` o `Sin sesión`).
+*   **Gestión de Roles Dinámica:** El menú principal adapta y muestra el estado actual de tu sesión (`cliente` o `Sin sesión`).
 *   **Consola Limpia y Asistida:** Formularios interactivos que validan tipos de datos (entero, decimal, obligatorios) antes de realizar peticiones HTTP REST.
 *   **Formateo JSON Estilizado:** Las respuestas devueltas por el servidor se imprimen formateadas y con colores de depuración en la terminal para una rápida legibilidad.
 
@@ -462,6 +444,24 @@ Sigue estos sencillos pasos para levantar el entorno de desarrollo en tu ordenad
     python main.py
     ```
 5.  ¡Disfruta navegando y probando todas las funcionalidades interconectadas del sistema!
+
+---
+
+## 🖼️ 9. Gestión y Resolución Dinámica de Fotos de Perfil
+
+Para complementar la experiencia social y la personalización de usuarios, la API implementa soporte completo para **fotos de perfil** en los clientes.
+
+### A. Almacenamiento y Validación
+*   Las fotos de perfil se guardan en la colección `clientes` bajo el campo `"foto_perfil"`, el cual almacena una URL string absoluta de la imagen subida.
+*   En `blueprints/usuarios.py`, se actualizó el esquema de validación JSON Schema para soportar y verificar `"foto_perfil"` en los endpoints de creación y modificación de perfiles:
+    *   `POST /clientes`
+    *   `PUT /clientes/<id>`
+
+### B. Optimización de Feeds de Comunidad (Dynamic Lookup Joins)
+Para evitar la duplicidad de urls estáticas en cada post y prevenir enlaces obsoletos (stale URLs) si un usuario decide cambiar su foto de perfil posterior a la creación de un post, se ha diseñado una resolución en tiempo real:
+*   En `blueprints/comunidad.py`, al consultar el listado de publicaciones (`GET /posts` y `GET /posts/<id>`), el backend recopila de forma única los `autor_id` del lote de posts.
+*   Realiza una consulta masiva optimizada utilizando `$in` para traer en un solo paso la propiedad `foto_perfil` actualizada de la colección `clientes`.
+*   Asocia dinámicamente este enlace inyectando el campo `autor_foto_perfil` en la respuesta JSON final de cada post, logrando consistencia instantánea en toda la red social.
 
 ---
 
