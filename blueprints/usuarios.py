@@ -57,7 +57,8 @@ def crear_cliente():
                 "altura": { "type": "number" },
                 "nutricionista_id": {"type": "string"},
                 "genero": {"type": "string"},
-                "objetivo": {"type": "string"}
+                "objetivo": {"type": "string"},
+                "foto_perfil": { "type": ["string", "null"] }
             },
             "required": ["nombre", "email", "password"],
             "additionalProperties": False
@@ -157,7 +158,8 @@ def modificar_cliente(id):
                 "peso": { "type": "number" },
                 "altura": { "type": "number" },
                 "objetivo": {"type": "string"},
-                "nutricionista_id": {"type": "string"}
+                "nutricionista_id": {"type": "string"},
+                "foto_perfil": { "type": ["string", "null"] }
             },
             "additionalProperties": False
         }
