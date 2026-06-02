@@ -329,7 +329,7 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 ### 📋 Gestión de Dietas y Rutinas (`planes_bp`)
 
 > [!NOTE]
-> Para la eliminación de dietas y rutinas, la API implementa **borrado lógico (soft delete)** marcando el atributo `activa: false`, de forma que los históricos de entrenamiento y muro social no pierdan la integridad de los datos.
+> Para la eliminación de dietas y rutinas, la API implementa **borrado lógico (soft delete)** marcando el atributo `activa: false` en sus respectivas colecciones. Esto hace que dejen de listarse en el panel personal del usuario creador. Sin embargo, las referencias `dieta_id` y `rutina_id` en la colección `posts` se preservan de forma deliberada. Puesto que los endpoints de consulta individual por ID (`GET /dietas/<id>` y `GET /rutinas/<id>`) no discriminan el estado activo del documento, **el plan sigue siendo totalmente accesible, visualizable y replicable por otros usuarios desde el feed social de la comunidad**, garantizando la completa preservación del conocimiento y de la interacción histórica.
 
 | Método | Endpoint | Permiso | Descripción |
 | :--- | :--- | :--- | :--- |
