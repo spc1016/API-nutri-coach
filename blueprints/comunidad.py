@@ -33,18 +33,32 @@ def obtener_posts():
         # Ordenados por fecha descendente (más recientes primero)
         posts = list(db.posts.find(filtro).sort('fecha_creacion', -1).limit(limit))
         
-        # Obtener los IDs de autores de los posts
-        autor_ids = list(set([p['autor_id'] for p in posts if 'autor_id' in p]))
+        # Obtener los IDs de autores de los posts y de los comentarios
+        autor_ids = set()
+        for p in posts:
+            if 'autor_id' in p and p['autor_id']:
+                autor_ids.add(p['autor_id'])
+            for c in p.get('comentarios', []):
+                if 'autor_id' in c and c['autor_id']:
+                    try:
+                        autor_ids.add(ObjectId(c['autor_id']))
+                    except Exception:
+                        pass
+        
+        autor_ids_list = list(autor_ids)
         
         # Buscar las fotos de perfil de estos clientes y nutricionistas
-        clientes_fotos = {str(c['_id']): c.get('foto_perfil') for c in db.clientes.find({'_id': {'$in': autor_ids}}, {'foto_perfil': 1})}
-        nutris_fotos = {str(n['_id']): n.get('foto_perfil') for n in db.nutricionistas.find({'_id': {'$in': autor_ids}}, {'foto_perfil': 1})}
+        clientes_fotos = {str(c['_id']): c.get('foto_perfil') for c in db.clientes.find({'_id': {'$in': autor_ids_list}}, {'foto_perfil': 1})}
+        nutris_fotos = {str(n['_id']): n.get('foto_perfil') for n in db.nutricionistas.find({'_id': {'$in': autor_ids_list}}, {'foto_perfil': 1})}
         
         fotos_map = {**clientes_fotos, **nutris_fotos}
         
         for p in posts:
             p_autor_id_str = str(p.get('autor_id', ''))
             p['autor_foto_perfil'] = fotos_map.get(p_autor_id_str)
+            for c in p.get('comentarios', []):
+                c_autor_id_str = str(c.get('autor_id', ''))
+                c['autor_foto_perfil'] = fotos_map.get(c_autor_id_str)
             
         return jsonify(_oid_to_str(posts)), 200
     except Exception as e:
@@ -59,17 +73,26 @@ def obtener_post(id):
         if not post:
             return jsonify({'error': 'Post no encontrado'}), 404
             
-        # Obtener la foto de perfil del autor
-        autor_id = post.get('autor_id')
-        foto_perfil = None
-        if autor_id:
-            usuario = db.clientes.find_one({'_id': ObjectId(autor_id)}, {'foto_perfil': 1})
-            if not usuario:
-                usuario = db.nutricionistas.find_one({'_id': ObjectId(autor_id)}, {'foto_perfil': 1})
-            if usuario:
-                foto_perfil = usuario.get('foto_perfil')
+        # Obtener la foto de perfil del autor del post y de los comentarios
+        autor_ids = set()
+        if post.get('autor_id'):
+            autor_ids.add(post.get('autor_id'))
+        for c in post.get('comentarios', []):
+            if c.get('autor_id'):
+                try:
+                    autor_ids.add(ObjectId(c['autor_id']))
+                except Exception:
+                    pass
         
-        post['autor_foto_perfil'] = foto_perfil
+        autor_ids_list = list(autor_ids)
+        clientes_fotos = {str(c['_id']): c.get('foto_perfil') for c in db.clientes.find({'_id': {'$in': autor_ids_list}}, {'foto_perfil': 1})}
+        nutris_fotos = {str(n['_id']): n.get('foto_perfil') for n in db.nutricionistas.find({'_id': {'$in': autor_ids_list}}, {'foto_perfil': 1})}
+        fotos_map = {**clientes_fotos, **nutris_fotos}
+        
+        post['autor_foto_perfil'] = fotos_map.get(str(post.get('autor_id', '')))
+        for c in post.get('comentarios', []):
+            c_autor_id_str = str(c.get('autor_id', ''))
+            c['autor_foto_perfil'] = fotos_map.get(c_autor_id_str)
         
         return jsonify(_oid_to_str(post)), 200
     except Exception:
