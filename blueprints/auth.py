@@ -52,7 +52,7 @@ def login():
 # Endpoints de registro con verificación por email
 # ──────────────────────────────────────────────
 
-GMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@gmail\.com$')
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 @auth_bp.route('/register/send-code', methods=['POST'])
 def register_send_code():
@@ -73,9 +73,9 @@ def register_send_code():
         
         email = data['email'].strip().lower()
         
-        # Validar que sea un email de Gmail
-        if not GMAIL_REGEX.match(email):
-            return jsonify({'error': 'Se requiere un email de gmail válido (@gmail.com)'}), 400
+        # Validar formato de email
+        if not EMAIL_REGEX.match(email):
+            return jsonify({'error': 'Se requiere un email válido'}), 400
         
         # Verificar que el email no esté registrado
         if db.clientes.find_one({'email': email}) or db.nutricionistas.find_one({'email': email}):

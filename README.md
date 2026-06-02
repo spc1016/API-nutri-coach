@@ -251,7 +251,7 @@ sequenceDiagram
     participant GAS as Google Apps Script
 
     Cliente->>API: POST /register/send-code {nombre, email, password}
-    Note over API: Valida que el email termine en @gmail.com
+    Note over API: Valida que el formato del email sea válido
     API->>DB: Consultar duplicado en 'clientes'
     alt Email no duplicado
         API->>DB: Guarda registro temporal en 'verificaciones_pendientes' (Código OTP + Contraseña Hasheada)
@@ -293,7 +293,7 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 | Método | Endpoint | Permiso | Descripción |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/login` | Público | Autentica al usuario. Retorna un JWT de acceso (válido 24 horas) y el rol. |
-| `POST` | `/register/send-code` | Público | Valida datos básicos de registro y envía un código de 6 dígitos a un correo `@gmail.com` válido. |
+| `POST` | `/register/send-code` | Público | Valida datos básicos de registro y envía un código de 6 dígitos a un correo electrónico válido. |
 | `POST` | `/register/verify-code` | Público | Valida el código temporal enviado. Si es correcto, da de alta al cliente de manera formal. |
 | `POST` | `/register/resend-code` | Público | Genera y reenvía un nuevo código OTP a una solicitud pendiente de registro. |
 
