@@ -2,7 +2,7 @@
 
 ¡Bienvenido a **NutriCoach**! Una plataforma de software integral diseñada para **clientes** y entusiastas del fitness, permitiendo una planificación nutricional avanzada, el diseño de rutinas de entrenamiento físico a medida, el seguimiento minucioso del progreso corporal y una red comunitaria interactiva.
 
-Este repositorio contiene la arquitectura completa del proyecto, dividida en un robusto **Backend en Flask** con base de datos NoSQL en **MongoDB Atlas** y un **Cliente de terminal CLI** para interactuar de forma directa con todas las funcionalidades de la API.
+Este repositorio contiene la arquitectura completa del proyecto backend, estructurado en un robusto **Backend en Flask** con base de datos NoSQL en **MongoDB Atlas**.
 
 ---
 
@@ -13,8 +13,8 @@ Este repositorio contiene la arquitectura completa del proyecto, dividida en un 
 4. [📊 Diseño de la Base de Datos (Modelos MongoDB)](#4--diseño-de-la-base-de-datos-modelos-mongodb)
 5. [📈 Flujos de Trabajo Clave](#5--flujos-de-trabajo-clave)
 6. [🛠️ Catálogo Completo de Endpoints (API Specs)](#6--catálogo-completo-of-endpoints-api-specs)
-7. [💻 Cliente Interactivo (CLI)](#7--cliente-interactivo-cli)
-8. [⚙️ Instalación y Puesta en Marcha](#8--instalación-y-puesta-en-marcha)
+7. [⚙️ Instalación y Puesta en Marcha](#7--instalación-y-puesta-en-marcha)
+8. [🖼️ Gestión y Resolución Dinámica de Fotos de Perfil](#8--gestión-y-resolución-dinámica-de-fotos-de-perfil)
 
 ---
 
@@ -24,7 +24,7 @@ El diseño del sistema sigue un modelo cliente-servidor desacoplado, estructurad
 
 ```mermaid
 graph TD
-    Client[💻 Cliente CLI / App Web] -->|HTTP REST + Bearer JWT| API[🐍 API Flask]
+    Client[💻 Cliente / App Web] -->|HTTP REST + Bearer JWT| API[🐍 API Flask]
     
     subgraph Servidor Backend
         API -->|Controlador / Blueprints| Auth[🔑 Auth & Registro]
@@ -71,25 +71,22 @@ Para garantizar que los recursos permanezcan protegidos, se han implementado dec
 La API está estructurada modularmente mediante **Flask Blueprints**, lo que garantiza un desarrollo limpio, mantenible y escalable.
 
 ```bash
-API_NutriCoach/
-├── client/                      # Cliente interactivo para pruebas de la API
-│   ├── main.py                  # Consola interactiva CLI (700+ líneas de lógica de negocio)
-│   └── requirements.txt         # Dependencias del cliente (requests)
-└── server/                      # Servidor API REST
-    ├── blueprints/              # Módulos de rutas y controladores (Blueprints)
-    │   ├── __init__.py
-    │   ├── auth.py              # Login, registro y verificación por código OTP de correo
-    │   ├── catalogos.py         # Catálogo maestro de alimentos y ejercicios
-    │   ├── comunidad.py         # Posts, likes y comentarios
-    │   ├── planes.py            # Gestión avanzada de dietas y rutinas (y sus subrecursos)
-    │   ├── seguimiento.py       # Registro de peso corporal e historial de entrenamientos por series
-    │   └── usuarios.py          # CRUD de clientes y red de seguidores (follow)
-    ├── application.py           # Punto de entrada de la aplicación Flask (configuraciones e inicializaciones)
-    ├── config.py                # Variables de entorno y credenciales (MongoDB, JWT_Secret, etc.)
-    ├── email_service.py         # Motor de envío OTP y validación temporal de pre-registro
-    ├── utils.py                 # Conexión global a MongoDB y decoradores de autenticación
-    ├── documentation.yaml       # Especificación completa OpenAPI 3.0.3 (Swagger)
-    └── requirements.txt         # Dependencias de producción del servidor backend
+API-nutri-coach/
+├── blueprints/              # Módulos de rutas y controladores (Blueprints)
+│   ├── __init__.py
+│   ├── auth.py              # Login, registro y verificación por código OTP de correo
+│   ├── catalogos.py         # Catálogo maestro de alimentos y ejercicios
+│   ├── comunidad.py         # Posts, likes y comentarios
+│   ├── planes.py            # Gestión avanzada de dietas y rutinas (y sus subrecursos)
+│   ├── seguimiento.py       # Registro de peso corporal e historial de entrenamientos por series
+│   └── usuarios.py          # CRUD de clientes y red de seguidores (follow)
+├── .env                     # Variables de entorno locales
+├── application.py           # Punto de entrada de la aplicación Flask (configuraciones e inicializaciones)
+├── email_service.py         # Motor de envío OTP y validación temporal de pre-registro
+├── utils.py                 # Conexión global a MongoDB y decoradores de autenticación
+├── documentation.yaml       # Especificación completa OpenAPI 3.0.3 (Swagger)
+├── requirements.txt         # Dependencias de producción del servidor backend
+└── worker.py                # Worker para tareas de correo en segundo plano
 ```
 
 ---
@@ -379,19 +376,7 @@ Para evitar problemas de falta de memoria (Out of Memory / OOM) y ataques DDoS a
 
 ---
 
-## 7. 💻 Cliente Interactivo (CLI)
-
-El proyecto incluye un completo **Cliente de Consola CLI** (`client/main.py`) programado en Python puro. Este cliente implementa un sistema interactivo mediante menús para interactuar con el 100% de la API de producción levantada en AWS Elastic Beanstalk o bien apuntando a un entorno de desarrollo local.
-
-### 🌟 Características del Cliente
-*   **Gestión de Sesión Fluida:** Permite hacer login y almacenar de forma transparente el token JWT Bearer para inyectarlo de manera automática en las peticiones posteriores.
-*   **Gestión de Roles Dinámica:** El menú principal adapta y muestra el estado actual de tu sesión (`cliente` o `Sin sesión`).
-*   **Consola Limpia y Asistida:** Formularios interactivos que validan tipos de datos (entero, decimal, obligatorios) antes de realizar peticiones HTTP REST.
-*   **Formateo JSON Estilizado:** Las respuestas devueltas por el servidor se imprimen formateadas y con colores de depuración en la terminal para una rápida legibilidad.
-
----
-
-## 8. ⚙️ Instalación y Puesta en Marcha
+## 7. ⚙️ Instalación y Puesta en Marcha
 
 Sigue estos sencillos pasos para levantar el entorno de desarrollo en tu ordenador local:
 
@@ -399,57 +384,35 @@ Sigue estos sencillos pasos para levantar el entorno de desarrollo en tu ordenad
 *   Tener instalado **Python 3.8** o superior.
 *   Contar con un clúster de base de datos en **MongoDB Atlas** (o una base de datos local MongoDB ejecutándose).
 
-### A. Configuración y Ejecución del Servidor Backend
+### Pasos de Instalación y Ejecución
 
-1.  Accede a la carpeta del servidor:
-    ```bash
-    cd server
-    ```
-2.  Instala todas las dependencias requeridas del sistema:
+1.  Instala todas las dependencias requeridas del sistema:
     ```bash
     pip install -r requirements.txt
     ```
-3.  Crea tus variables de entorno en el sistema o configura directamente tu archivo `config.py` para enlazar tus servicios:
+2.  Configura tus variables de entorno en un archivo `.env` o en el sistema para enlazar tus servicios:
     *   `MONGODB_CONNECTION_STRING`: Tu URI de conexión a tu base de datos de MongoDB Atlas.
     *   `SECRET_KEY`: Una cadena segura para encriptar los tokens JWT del sistema.
     *   `GMAIL_WEB_APP_URL`: La URL del Web App de Google Apps Script para el envío automatizado de correos OTP.
-4.  Levanta la aplicación localmente:
+3.  Levanta la aplicación localmente:
     ```bash
     python application.py
     ```
     *El servidor se levantará de forma automática en http://localhost:5000*
-5.  **Ejecutar el Servidor de Tareas Asíncronas (Redis + RQ Worker):**
+4.  **Ejecutar el Servidor de Tareas Asíncronas (Redis + RQ Worker):**
     *   Asegúrate de tener un servidor de **Redis** ejecutándose (ej. `redis-server`).
     *   Inicia el worker de RQ para procesar la cola de correos electrónicos en una terminal paralela:
         ```bash
         python worker.py
         ```
-6.  **Verificación de Funcionamiento:**
+5.  **Verificación de Funcionamiento:**
     *   Abre tu navegador e ingresa a `http://localhost:5000/docs`. Deberías visualizar de forma automática el dashboard interactivo de **Swagger UI** con toda la especificación cargada correctamente.
-
-### B. Ejecución del Cliente CLI
-
-1.  Abre una terminal paralela y accede a la carpeta del cliente:
-    ```bash
-    cd client
-    ```
-2.  Asegúrate de tener instalada la librería de peticiones HTTP:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  *(Opcional)* Edita el archivo `main.py` para cambiar la dirección de conexión base:
-    *   Línea 7: Modifica `BASE_URL = "http://localhost:5000"` para pruebas de desarrollo local, o déjala por defecto apuntando al servidor cloud en producción.
-4.  Ejecuta la consola interactiva en tu terminal:
-    ```bash
-    python main.py
-    ```
-5.  ¡Disfruta navegando y probando todas las funcionalidades interconectadas del sistema!
 
 ---
 
-## 🖼️ 9. Gestión y Resolución Dinámica de Fotos de Perfil
+## 🖼️ 8. Gestión y Resolución Dinámica de Fotos de Perfil
 
-Para complementar la experiencia social y la personalización de usuarios, la API implementa soporte completo para **fotos de perfil** en los clientes.
+Para complementar la experiencia social y la personalización de usuarios, la API implementa soporte completo para **fotos de perfil**.
 
 ### A. Almacenamiento y Validación
 *   Las fotos de perfil se guardan en la colección `clientes` bajo el campo `"foto_perfil"`, el cual almacena una URL string absoluta de la imagen subida.
