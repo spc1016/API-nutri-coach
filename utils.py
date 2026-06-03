@@ -20,16 +20,18 @@ except Exception as e:
     redis_conn = None
     task_queue = None
 
-# Helper para extraer paginación (limite por defecto a 50)
-def get_pagination(request, default_limit=50):
+# Helper para extraer paginación (limite por defecto a 50, maximo a 100)
+def get_pagination(request, default_limit=50, max_limit=100):
     try:
         skip = int(request.args.get('skip', 0))
+        skip = max(0, skip)
     except ValueError:
         skip = 0
     try:
         limit = int(request.args.get('limit', default_limit))
-        if limit < 0:
+        if limit <= 0:
             limit = default_limit
+        limit = min(limit, max_limit)
     except ValueError:
         limit = default_limit
     return skip, limit
